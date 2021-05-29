@@ -31,6 +31,18 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <tr v-for="product in products" v-bind:key="product.id">
+                            <td>
+                                {{product.name}}
+                            </td>
+                            <td>
+                                {{product.price}}
+                            </td>
+                            <td>
+                                <button @click="editProduct(product)" class="btn btn-primary">edit</button>
+                                <button @click="deleteProduct(product)" class="btn btn-danger">delete</button>
+                            </td>
+                        </tr>
                         <!-- <tr v-for="product in products" :key="product.id">
                             <td>{{product.data().name}}</td>
                             <td>{{product.data().price}}</td>
@@ -64,6 +76,10 @@
                                 <input type="text" placeholder="Product Name" v-model="product.name" class="form-control">
                             </div>
 
+                            <!-- <div class="form-group">
+                                <textarea name="description" class="form-control" v-model="product.description" placeholder="product description"></textarea>
+                            </div> -->
+
                             <div class="form-group">
                                 <vue-editor v-model="product.description"></vue-editor>
                             </div>
@@ -77,6 +93,10 @@
                                 <input type="text" placeholder="Product price" v-model="product.price" class="form-control">
                             </div>
 
+                            <div class="form-group">
+                                <input type="text" placeholder="Product tags" v-model="product.tag" class="form-control">
+                            </div>
+
                             <!-- <div class="form-group">
                                 <input type="text" @keyup.188="addTag" placeholder="Product tags" v-model="tag" class="form-control">
 
@@ -88,12 +108,12 @@
                                 </div>
                             </div> -->
 
-                            <!-- <div class="form-group">
+                            <div class="form-group">
                                 <label for="product_image">Product Images</label>
-                                <input type="file" @change="uploadImage" class="form-control">
+                                <input type="file" @change="uploadImage()" class="form-control">
                             </div>
 
-                            <div class="form-group d-flex">
+                            <!-- <div class="form-group d-flex">
                                 <div class="p-1" v-for="(image, index) in product.images" v-bind:key="index.id">
                                     <div class="img-wrapp">
                                         <img :src="image" alt="" width="80px">
@@ -107,9 +127,10 @@
 
                 </div>
                 <div class="modal-footer">
-                    <button @click="closeModal('#product')" type="button" class="btn btn-secondary">Close</button>
-                    <button @click="addProduct()" type="button" class="btn btn-primary">Save changes</button>
-                    <button @click="updateProduct()" type="button" class="btn btn-primary">Apply changes</button>
+                    <button @click="closeModal('#product')" type="button" class="btn btn-secondary">close</button>
+                    <button @click="addProduct()" type="button" class="btn btn-primary" v-if="modal == 'new'">save changes</button>
+                    <button @click="updateProduct()" type="button" class="btn btn-primary" v-if="modal == 'edit'">apply changes</button>
+                    <!-- <button @click="updateProduct()" type="button" class="btn btn-primary">Apply changes</button> -->
                 </div>
             </div>
         </div>
@@ -144,15 +165,18 @@
 </template>
 
 <script>
-import { VueEditor } from "vue2-editor";
 import {
-    fb, db
+    VueEditor
+} from "vue2-editor";
+import {
+    fb,
+    db
 } from "../firebase";
 
 export default {
     name: "products",
     components: {
-    VueEditor
+        VueEditor
     },
     props: {
         msg: String,
@@ -167,11 +191,12 @@ export default {
                 tag: null,
                 image: null
             },
-            activeItem: null
+            activeItem: null,
+            modal: null
         };
     },
-    firestore(){
-        return{
+    firestore() {
+        return {
             products: db.collection('products'),
         }
     },
@@ -180,6 +205,8 @@ export default {
             $(name).modal('hide');
         },
         addNew() {
+            this.reset();
+            this.modal = 'new';
             $('#product').modal('show');
         },
         // watcher() {
@@ -192,12 +219,19 @@ export default {
         //     });
         // },
         editProduct(product) {
+            this.modal = 'edit';
             // console.log(product);
-            // this.product = product.data();
-            // this.activeItem = product.id;
-            // $('#editProduct').modal('show');
+            this.product = product;
+            $('#product').modal('show');
         },
         updateProduct() {
+            this.$firestore.products.doc(this.product.id).update(this.product);
+            this.closeModal("#product");
+            this.reset();
+            Toast.fire({
+                icon: 'success',
+                title: 'updated successfully'
+            })
             // var doc = db.collection("products").doc(this.activeItem);
 
             // // Set the "capital" field of the city 'DC'
@@ -215,6 +249,29 @@ export default {
             //     });
         },
         deleteProduct(doc) {
+            let id = (doc[".key"]);
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                this.$firestore.products.doc(id).delete();
+                if (result.isConfirmed) {
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'deleted successfully'
+                    })
+                    // Swal.fire(
+                    //     'Deleted!',
+                    //     'Your file has been deleted.',
+                    //     'success'
+                    // )
+                }
+            })
             // if (confirm("Are you sure?")) {
             //     db.collection("products").doc(doc).delete().then(() => {
             //         console.log("Document successfully deleted!");
@@ -237,10 +294,23 @@ export default {
         addProduct() {
             this.$firestore.products.add(this.product);
             this.closeModal('#product');
+            Toast.fire({
+                icon: 'success',
+                title: 'created successfully'
+            })
         },
-        // reset() {
-        //     Object.assign(this.$data, this.$options.data.apply(this));
-        // }
+        reset() {
+            // Object.assign(this.$data, this.$options.data.apply(this));
+            this.product = {
+                name: null,
+                description: null,
+                price: null,
+                tags: null,
+                images: null
+                // tags: [],
+                // images: []
+            }
+        }
     },
     created() {
         // this.readData();
