@@ -94,7 +94,12 @@
                             </div>
 
                             <div class="form-group">
-                                <input type="text" placeholder="Product tags" v-model="product.tag" class="form-control">
+                                <div class="tag" v-for="(tag, index) in product.tags" :key="'tag'+index">
+                                    <span v-if="activeTag !== index" @click="activeTag = index">{{tag}}</span>
+                                    <input v-else v-model="product.tags[index]" v-focus :style="{'width': tag.length + 'ch'}" @keyup.enter="activeTag = null" @blur="activeTag = null" />
+                                    <span @click="removeTag(index)"><i class="fas fa-times-circle"></i></span>
+                                </div>
+                                <input type="text" @keydown.enter="addTag" placeholder="Product tags" v-model="tag" class="form-control">
                             </div>
 
                             <!-- <div class="form-group">
@@ -110,7 +115,16 @@
 
                             <div class="form-group">
                                 <label for="product_image">Product Images</label>
-                                <input type="file" @change="uploadImage()" class="form-control">
+                                <input type="file" @change="uploadImage" class="form-control">
+                            </div>
+
+                            <div class="form-group d-flex img-container">
+                                <div class="p-2" v-for="(image, index) in product.images" :key="index">
+                                    <div class="img-wrap">
+                                       <img :src="image" alt="" width="80px">
+                                        <span class="delete-img" @click="removeImage(image, index)"><i class="fas fa-times-circle"></i></span> 
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- <div class="form-group d-flex">
@@ -188,11 +202,13 @@ export default {
                 name: null,
                 price: null,
                 description: null,
-                tag: null,
-                image: null
+                tags: [],
+                images: []
             },
             activeItem: null,
-            modal: null
+            modal: null,
+            tag: null,
+            activeTag: null
         };
     },
     firestore() {
@@ -203,6 +219,16 @@ export default {
     methods: {
         closeModal(name) {
             $(name).modal('hide');
+        },
+        addTag() {
+            if (!this.tag == "" || !this.tag == null) {
+                this.product.tags.push(this.tag);
+                this.tag = "";
+                console.log(this.product.tags);
+            }
+        },
+        removeTag(index) {
+            this.product.tags.splice(index, 1);
         },
         addNew() {
             this.reset();
@@ -249,7 +275,7 @@ export default {
             //     });
         },
         deleteProduct(doc) {
-            let id = (doc[".key"]);
+            let id = (doc.id);
             Swal.fire({
                 title: 'Are you sure?',
                 text: "You won't be able to revert this!",
@@ -305,16 +331,62 @@ export default {
                 name: null,
                 description: null,
                 price: null,
-                tags: null,
-                images: null
+                tags: [],
+                images: []
                 // tags: [],
                 // images: []
             }
+        },
+        uploadImage(e) {
+            if(e.target.files[0]){
+                let file = e.target.files[0];
+            var storageRef = fb.storage().ref('products/' + new Date().getTime() + '_' + file.name);
+            let uploadTask = storageRef.put(file);
+            uploadTask.on('state_changed',
+                (snapshot) => {},
+                (error) => {
+                    // Handle unsuccessful uploads
+                },
+                () => {
+                    // Handle successful uploads on complete
+                    // For instance, get the download URL: https://firebasestorage.googleapis.com/...
+                    uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                        this.product.images.push(downloadURL);
+                        console.log('File available at', downloadURL);
+                    });
+                }
+            );
+
+            // uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+            //     console.log('File available at', downloadURL);
+            // });
+            // storageRef.put(file).then((snapshot) => {
+            //   console.log("this is snapshot: ", snapshot);
+            // });
+            // console.log(file);
+            }          
+        },
+        removeImage(img, index) {
+            let image = fb.storage().refFromURL(img);
+
+            this.product.images.splice(index, 1);
+            image.delete().then(function(){
+                console.log("image deleted");
+            }).catch(function(error){
+                console.log("an error occurred");
+            });
         }
     },
     created() {
         // this.readData();
     },
+    directives: {
+        focus: {
+            inserted: (el) => {
+                el.focus()
+            }
+        }
+    }
 };
 </script>
 
@@ -323,5 +395,63 @@ export default {
 <style lang="scss" scoped>
 .container {
     text-align: left;
+}
+
+.tag {
+    float: left;
+    padding: 3px 5px;
+
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
+
+    &:hover {
+        background-color: #baf8ab;
+        border-radius: 5px;
+    }
+
+    span:first-child {
+        margin-right: 3px;
+    }
+
+    i {
+        color: #666;
+
+        &:hover {
+            color: #333;
+        }
+    }
+
+    input {
+        width: 100%;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        outline: none;
+        background-color: transparent;
+    }
+}
+
+.img-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+.img-wrap {
+    position: relative;
+    i {
+        color: #666;
+
+        &:hover {
+            color: #333;
+        }
+    }
+}
+.img-wrap span.delete-img {
+    position: absolute;
+    top: -14px;
+    // left: -2px;
+}
+.img-wrap span.delete-img:hover {
+    cursor: pointer;
 }
 </style>
