@@ -246,6 +246,7 @@ export default {
         // },
         editProduct(product) {
             this.modal = 'edit';
+            this.tag = null;
             // console.log(product);
             this.product = product;
             $('#product').modal('show');
