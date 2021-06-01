@@ -111,15 +111,15 @@ export default {
                     db.collection("profiles").doc(user.user.uid).set({
                         name: this.name
                     })
-                    .then(function() {
+                    .then(() => {
                         console.log("Document successfully written!");
                     })
-                    .catch(function(error) {
+                    .catch((error) => {
                         console.error("Error writing document: ", error);
                     });
                     this.$router.replace('admin');
                 })
-                .catch(function(error) {
+                .catch((error) => {
                 // Handle Errors here.
                 var errorCode = error.code;
                 var errorMessage = error.message;

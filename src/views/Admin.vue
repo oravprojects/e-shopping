@@ -1,6 +1,6 @@
 <template>
-  <div class="admin">
-<div class="page-wrapper default-theme sidebar-bg bg1 toggled">
+<div class="admin">
+    <div class="page-wrapper default-theme sidebar-bg bg1 toggled">
         <a id="show-sidebar" @click="closeMenu" class="btn btn-sm btn-dark" href="#">
             <i class="fas fa-bars"></i>
         </a>
@@ -19,11 +19,11 @@
                         <img class="img-responsive img-rounded" src="/img/user.png" alt="User picture">
                     </div>
                     <div class="user-info">
-                        <span class="user-name">John
-                            <strong>Smith</strong>
+                        <span class="user-name">{{name}}
+                            <strong></strong>
                         </span>
                         <!-- <span class="user-role"> {{email}} </span> -->
-                        <span class="user-role"> Admin </span>
+                        <span class="user-role"> {{email}} </span>
                         <span class="user-status">
                             <i class="fa fa-circle"></i>
                             <span>Online</span>
@@ -85,20 +85,17 @@
                 </div>
                 <!-- sidebar-menu  -->
             </div>
-       
+
         </nav>
         <!-- sidebar-content  -->
         <main class="page-content">
-            <router-view/>
+            <router-view />
         </main>
         <!-- page-content" -->
     </div>
     <!-- page-wrapper -->
 
-
-
-
-  </div>
+</div>
 </template>
 
 <script>
@@ -137,26 +134,54 @@
 // @ is an alias to /src
 // import HelloWorld from "@/components/HelloWorld.vue";
 import Hero from "@/components/Hero.vue";
-import {fb} from "../firebase";
+import {
+    fb,
+    db
+} from "../firebase";
 
 export default {
-  name: "admin",
-  components: {
-    Hero
-  },
-  methods: {
-    closeMenu(){
-      $(".page-wrapper").toggleClass("toggled");
+    name: "admin",
+    data() {
+        return {
+            name: null,
+            email: null,
+        }
     },
-    logout(){
-        fb.auth().signOut()
-        .then(()=>{
-            this.$router.replace("/");
-        })
-        .catch((err)=>{
-            console.log(err);
+    components: {
+        Hero
+    },
+    methods: {
+        closeMenu() {
+            $(".page-wrapper").toggleClass("toggled");
+        },
+        logout() {
+            fb.auth().signOut()
+                .then(() => {
+                    this.$router.replace("/");
+                })
+                .catch((err) => {
+                    console.log(err);
+                });
+        }
+    },
+    created() {
+        let user = fb.auth().currentUser
+
+        let docRef = db.collection("profiles").doc(user.uid);
+
+        docRef.get().then((doc) => {
+            if (doc.exists) {
+                // console.log("Document data:", doc.data());
+                this.name = doc.data().name;
+            } else {
+                // doc.data() will be undefined in this case
+                console.log("No such document!");
+            }
+        }).catch((error) => {
+            console.log("Error getting document:", error);
         });
+
+        this.email = user.email;
     }
-  }
 };
 </script>

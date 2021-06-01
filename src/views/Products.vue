@@ -39,7 +39,7 @@
                                 {{product.price}}
                             </td>
                             <td>
-                                <button @click="editProduct(product)" class="btn btn-primary">edit</button>
+                                <button @click="editProduct(product)" class="btn btn-primary mr-2">edit</button>
                                 <button @click="deleteProduct(product)" class="btn btn-danger">delete</button>
                             </td>
                         </tr>
@@ -121,8 +121,8 @@
                             <div class="form-group d-flex img-container">
                                 <div class="p-2" v-for="(image, index) in product.images" :key="index">
                                     <div class="img-wrap">
-                                       <img :src="image" alt="" width="80px">
-                                        <span class="delete-img" @click="removeImage(image, index)"><i class="fas fa-times-circle"></i></span> 
+                                        <img :src="image" alt="" width="80px">
+                                        <span class="delete-img" @click="removeImage(image, index)"><i class="fas fa-times-circle"></i></span>
                                     </div>
                                 </div>
                             </div>
@@ -252,13 +252,19 @@ export default {
             $('#product').modal('show');
         },
         updateProduct() {
-            this.$firestore.products.doc(this.product.id).update(this.product);
+            this.$firestore.products.doc(this.product.id).update(this.product)
+                .then(() => {
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'updated successfully'
+                    })
+                })
+                .catch((error) => {
+                    // The document probably doesn't exist.
+                    console.error("Error updating document: ", error);
+                });
             this.closeModal("#product");
             this.reset();
-            Toast.fire({
-                icon: 'success',
-                title: 'updated successfully'
-            })
             // var doc = db.collection("products").doc(this.activeItem);
 
             // // Set the "capital" field of the city 'DC'
@@ -286,27 +292,18 @@ export default {
                 cancelButtonColor: '#d33',
                 confirmButtonText: 'Yes, delete it!'
             }).then((result) => {
-                this.$firestore.products.doc(id).delete();
                 if (result.isConfirmed) {
-                    Toast.fire({
-                        icon: 'success',
-                        title: 'deleted successfully'
-                    })
-                    // Swal.fire(
-                    //     'Deleted!',
-                    //     'Your file has been deleted.',
-                    //     'success'
-                    // )
+                    this.$firestore.products.doc(id).delete()
+                        .then(() => {
+                            Toast.fire({
+                                icon: 'success',
+                                title: 'deleted successfully'
+                            })
+                        }).catch((error) => {
+                            console.error("Error removing document: ", error);
+                        });
                 }
             })
-            // if (confirm("Are you sure?")) {
-            //     db.collection("products").doc(doc).delete().then(() => {
-            //         console.log("Document successfully deleted!");
-            //         this.watcher();
-            //     }).catch((error) => {
-            //         console.error("Error removing document: ", error);
-            //     });
-            // }
         },
         readData() {
             // this.products = [];
@@ -319,12 +316,17 @@ export default {
             // });
         },
         addProduct() {
-            this.$firestore.products.add(this.product);
-            this.closeModal('#product');
-            Toast.fire({
-                icon: 'success',
-                title: 'created successfully'
-            })
+            this.$firestore.products.add(this.product)
+                .then(() => {
+                    this.closeModal('#product');
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'created successfully'
+                    })
+                })
+                .catch((error) => {
+                    console.error("Error writing document: ", error);
+                });
         },
         reset() {
             // Object.assign(this.$data, this.$options.data.apply(this));
@@ -339,42 +341,42 @@ export default {
             }
         },
         uploadImage(e) {
-            if(e.target.files[0]){
+            if (e.target.files[0]) {
                 let file = e.target.files[0];
-            var storageRef = fb.storage().ref('products/' + new Date().getTime() + '_' + file.name);
-            let uploadTask = storageRef.put(file);
-            uploadTask.on('state_changed',
-                (snapshot) => {},
-                (error) => {
-                    // Handle unsuccessful uploads
-                },
-                () => {
-                    // Handle successful uploads on complete
-                    // For instance, get the download URL: https://firebasestorage.googleapis.com/...
-                    uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                        this.product.images.push(downloadURL);
-                        console.log('File available at', downloadURL);
-                    });
-                }
-            );
+                var storageRef = fb.storage().ref('products/' + new Date().getTime() + '_' + file.name);
+                let uploadTask = storageRef.put(file);
+                uploadTask.on('state_changed',
+                    (snapshot) => {},
+                    (error) => {
+                        // Handle unsuccessful uploads
+                    },
+                    () => {
+                        // Handle successful uploads on complete
+                        // For instance, get the download URL: https://firebasestorage.googleapis.com/...
+                        uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                            this.product.images.push(downloadURL);
+                            console.log('File available at', downloadURL);
+                        });
+                    }
+                );
 
-            // uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-            //     console.log('File available at', downloadURL);
-            // });
-            // storageRef.put(file).then((snapshot) => {
-            //   console.log("this is snapshot: ", snapshot);
-            // });
-            // console.log(file);
-            }          
+                // uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                //     console.log('File available at', downloadURL);
+                // });
+                // storageRef.put(file).then((snapshot) => {
+                //   console.log("this is snapshot: ", snapshot);
+                // });
+                // console.log(file);
+            }
         },
         removeImage(img, index) {
             let image = fb.storage().refFromURL(img);
 
             this.product.images.splice(index, 1);
-            image.delete().then(function(){
+            image.delete().then(() => {
                 console.log("image deleted");
-            }).catch(function(error){
-                console.log("an error occurred");
+            }).catch((error) => {
+                console.log("an error occurred: ", error);
             });
         }
     },
@@ -437,8 +439,10 @@ export default {
     display: flex;
     flex-wrap: wrap;
 }
+
 .img-wrap {
     position: relative;
+
     i {
         color: #666;
 
@@ -447,11 +451,13 @@ export default {
         }
     }
 }
+
 .img-wrap span.delete-img {
     position: absolute;
     top: -14px;
     // left: -2px;
 }
+
 .img-wrap span.delete-img:hover {
     cursor: pointer;
 }
