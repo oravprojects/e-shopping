@@ -12,7 +12,11 @@
   // text-align: center;
   color: #2c3e50;
 }
-
+.modal-open .modal {
+    width: 100% !important;
+    padding-right: 0 !important;
+    overflow-y: scroll !important;
+}
 #nav {
   padding: 30px;
 

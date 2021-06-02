@@ -27,7 +27,7 @@
                                 <label for="exampleInputPassword1">Password</label>
                                 <input type="password" @keyup.enter="login" v-model="password" class="form-control" id="exampleInputPassword1" placeholder="Password">
                             </div>
-
+                            <div class="mb-2"><a href="#" class="forgotpwd" data-toggle="modal" data-target="#forgotPwd" data-dismiss="modal">Forgot password?</a></div>
                             <div class="form-group">
                                 <button class="btn btn-primary" @click="login">Login</button>
                                 <button type="button" class="btn btn-secondary float-end" data-dismiss="modal">Close</button>
@@ -63,80 +63,127 @@
             </div>
         </div>
     </div>
+    <!-- Forgot Password Modal -->
+    <div class="modal fade" id="forgotPwd" tabindex="-1" role="dialog" aria-labelledby="forgotPwdTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <h5 class="text-center">Reset Password</h5>
+                    <div class="form-group">
+                        <label for="reqPwdEmail">Email address</label>
+                        <input type="email" v-model="email" class="form-control" id="reqPwdEmail" aria-describedby="emailHelp" placeholder="Enter email">
+                        <small class="form-text text-muted">We'll never share your email with anyone else.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <button class="btn btn-primary" @click="forgotPassword">Request Password Reset</button>
+                        <button type="button" class="btn btn-secondary float-end" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 </template>
 
 <script>
-import {fb, db} from "../firebase";
+import {
+    fb,
+    db
+} from "../firebase";
 
 export default {
     name: "Login",
-  props: {
-    msg: String
-  },
-  data(){
-      return {
-          name:null,
-          email:null,
-          password:null
-      }
-  },
+    props: {
+        msg: String
+    },
+    data() {
+        return {
+            name: null,
+            email: null,
+            password: null
+        }
+    },
 
-    methods:{
-      login(){
-          fb.auth().signInWithEmailAndPassword(this.email, this.password)
-                        .then(() => {
-                        $('#login').modal('hide');
-                        $('body').removeClass('modal-open');
-                        $('.modal-backdrop').remove();
-                          this.$router.replace('admin');  
-                        })
-                        .catch(function(error) {
-                            // Handle Errors here.
-                            var errorCode = error.code;
-                            var errorMessage = error.message;
-                            if (errorCode === 'auth/wrong-password') {
-                                alert('Wrong password.');
-                            } else {
-                                alert(errorMessage);
-                            }
-                            console.log(error);
-                    });
-      },
-      register(){
+    methods: {
+        login() {
+            fb.auth().signInWithEmailAndPassword(this.email, this.password)
+                .then(() => {
+                    $('#login').modal('hide');
+                    $('body').removeClass('modal-open');
+                    $('.modal-backdrop').remove();
+                    this.$router.replace('admin');
+                })
+                .catch(function (error) {
+                    // Handle Errors here.
+                    var errorCode = error.code;
+                    var errorMessage = error.message;
+                    if (errorCode === 'auth/wrong-password') {
+                        alert('Wrong password.');
+                    } else {
+                        alert(errorMessage);
+                    }
+                    console.log(error);
+                });
+        },
+        register() {
             fb.auth().createUserWithEmailAndPassword(this.email, this.password)
                 .then((user) => {
                     $('#login').modal('hide')
-                    
+
                     db.collection("profiles").doc(user.user.uid).set({
-                        name: this.name
-                    })
-                    .then(() => {
-                        console.log("Document successfully written!");
-                    })
-                    .catch((error) => {
-                        console.error("Error writing document: ", error);
-                    });
+                            name: this.name
+                        })
+                        .then(() => {
+                            console.log("Document successfully written!");
+                        })
+                        .catch((error) => {
+                            console.error("Error writing document: ", error);
+                        });
                     this.$router.replace('admin');
                 })
                 .catch((error) => {
-                // Handle Errors here.
-                var errorCode = error.code;
-                var errorMessage = error.message;
-                if (errorCode == 'auth/weak-password') {
-                    alert('The password is too weak.');
-                } else {
-                    alert(errorMessage);
-                }
-                console.log(error);
+                    // Handle Errors here.
+                    var errorCode = error.code;
+                    var errorMessage = error.message;
+                    if (errorCode == 'auth/weak-password') {
+                        alert('The password is too weak.');
+                    } else {
+                        alert(errorMessage);
+                    }
+                    console.log(error);
+                });
+        },
+        forgotPassword() {
+            var auth = fb.auth();
+            // var emailAddress = "user@example.com";
+
+            auth.sendPasswordResetEmail(this.email).then(() => {
+                // Email sent.
+                console.log("email sent");
+                Toast.fire({
+                        icon: 'success',
+                        title: 'email sent'
+                })
+            }).catch((error) => {
+                // An error happened.
+                console.log("error: ", error);
+                Toast.fire({
+                        icon: 'warning',
+                        title: error.message
+                })
             });
-      }
-  }
+        }
+    }
 };
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 
-<style scoped lang="scss">
+<style lang="scss" scoped>
+
+.forgotpwd {
+    text-decoration: none;
+}
 
 </style>

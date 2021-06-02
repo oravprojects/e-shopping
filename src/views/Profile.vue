@@ -112,7 +112,7 @@
 
                             <div class="col-md-4">
                                 <div class="form-group">
-                                    <input type="submit" value="Save Changes" class="btn btn-primary w-100">
+                                    <input type="submit" value="Save Changes" @click="updateAccount" class="btn btn-primary w-100">
                                 </div>
                             </div>
 
@@ -170,9 +170,9 @@ export default {
         }
     },
     firestore() {
-        const user = fb.auth().currentUser;
+        let user = fb.auth().currentUser;
         return {
-            profile: db.collection('profiles').doc(user.uid),
+            profile: db.collection('profiles').doc(user.uid), 
         }
     },
     methods: {
@@ -188,7 +188,7 @@ export default {
             });
         },
         updateProfile() {
-            this.$firestore.profile.update(this.profile)
+            this.$firestore.profiles.update(this.profile)
                 .then(() => {
                     Toast.fire({
                         icon: 'success',
@@ -200,9 +200,55 @@ export default {
                     console.error("Error updating document: ", error);
                 });
         },
-        uploadImage() {}
+        uploadImage() {},
+        updateAccount() {
+            var user = fb.auth().currentUser;
+            console.log(user);
+
+            user.updateEmail(this.account.email).then(() => {
+            // Update successful.
+            }).catch((error) => {
+            // An error happened.
+            });
+
+            // var newPassword = getASecureRandomPassword();
+
+            user.updatePassword(this.account.password).then(() => {
+            // Update successful.
+            }).catch((error) => {
+            // An error happened.
+            });
+
+            // user.updateProfile({
+            // displayName: "Jane Q. User",
+            // photoURL: "https://example.com/jane-q-user/profile.jpg"
+            // }).then(function() {
+            // // Update successful.
+            // }).catch(function(error) {
+            // // An error happened.
+            // });
+
+        },
     },
-    created() {}
+    created() {
+        let user = fb.auth().currentUser
+
+        let docRef = db.collection("profiles").doc(user.uid);
+
+        docRef.get().then((doc) => {
+            if (doc.exists) {
+                // console.log("Document data:", doc.data());
+                this.account.name = doc.data().name;
+            } else {
+                // doc.data() will be undefined in this case
+                console.log("No such document!");
+            }
+        }).catch((error) => {
+            console.log("Error getting document:", error);
+        });
+
+        this.account.email = user.email;
+    }
 };
 </script>
 
