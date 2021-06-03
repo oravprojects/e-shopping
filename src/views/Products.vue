@@ -221,7 +221,7 @@ export default {
             $(name).modal('hide');
         },
         addTag() {
-            if (!this.tag == "" || !this.tag == null) {
+            if (this.tag !== "" && this.tag !== null) {
                 this.product.tags.push(this.tag);
                 this.tag = "";
                 console.log(this.product.tags);

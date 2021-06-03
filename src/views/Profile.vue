@@ -88,19 +88,19 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <input type="text" v-model="account.email" placeholder="Email address" class="form-control">
+                                    <input type="email" v-model="account.email" placeholder="Email address" class="form-control">
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <input type="text" v-model="account.password" placeholder="New password" class="form-control">
+                                    <input type="password" v-model="account.password" placeholder="New password" class="form-control">
                                 </div>
                             </div>
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <input type="text" v-model="account.confirmPassword" placeholder="Confirm password" class="form-control">
+                                    <input type="password" v-model="account.confirmPassword" placeholder="Confirm password" class="form-control">
                                 </div>
                             </div>
 
@@ -135,6 +135,9 @@
 </template>
 
 <script>
+// import {
+//     Toast
+// } from 'bootstrap';
 import {
     VueEditor
 } from "vue2-editor";
@@ -142,6 +145,7 @@ import {
     fb,
     db
 } from '../firebase';
+
 export default {
     name: "profile",
     components: {
@@ -172,7 +176,7 @@ export default {
     firestore() {
         let user = fb.auth().currentUser;
         return {
-            profile: db.collection('profiles').doc(user.uid), 
+            profile: db.collection('profiles').doc(user.uid),
         }
     },
     methods: {
@@ -180,7 +184,7 @@ export default {
             const auth = fb.auth();
             auth.sendPasswordResetEmail(auth.currentUser.email).then(() => {
                 Toast.fire({
-                    type: 'success',
+                    icon: 'success',
                     title: 'Email sent'
                 })
             }).catch((error) => {
@@ -205,19 +209,75 @@ export default {
             var user = fb.auth().currentUser;
             console.log(user);
 
-            user.updateEmail(this.account.email).then(() => {
-            // Update successful.
-            }).catch((error) => {
-            // An error happened.
-            });
+            if (this.account.password !== "" && this.account.password !== null) {
+                if (this.account.password == this.account.confirmPassword) {
+                    user.updatePassword(this.account.password).then(() => {
+                        if (this.account.email !== "" && this.account.email !== null) {
+                            user.updateEmail(this.account.email).then(() => {
+                                document.getElementsByClassName("user-role")[0].innerHTML = this.account.email;
+                                Toast.fire({
+                                    icon: 'success',
+                                    title: 'email and password updated successfully'
+                                })
+                            }).catch((error) => {
+                                Toast.fire({
+                                    icon: 'error',
+                                    title: error
+                                })
+                            });
+                        } else {
+                            Toast.fire({
+                                icon: 'success',
+                                title: 'password updated successfully'
+                            });
+                        }
+                    }).catch((error) => {
+                        Toast.fire({
+                            icon: 'error',
+                            title: error
+                        })
+                    });
+                } else {
+                    Toast.fire({
+                        icon: 'warning',
+                        title: 'failed to update: confirmed password does not match new password'
+                    });
+                }
+            } else {
+                if (this.account.email !== "" && this.account.email !== null) {
+                    user.updateEmail(this.account.email).then(() => {
+                        document.getElementsByClassName("user-role")[0].innerHTML = this.account.email;
+                        Toast.fire({
+                            icon: 'success',
+                            title: 'email updated successfully'
+                        })
+                    }).catch((error) => {
+                        Toast.fire({
+                            icon: 'error',
+                            title: error
+                        })
+                    });
+                }
+            }
+
+            // user = fb.auth().currentUser;
+
+            // if (this.account.email !== "" && this.account.email !== null) {
+            //     user.updateEmail(this.account.email).then(() => {
+            //         Toast.fire({
+            //             icon: 'success',
+            //             title: 'email updated successfully'
+            //         }) // Update successful.
+            //     }).catch((error) => {
+            //         // An error happened.
+            //         Toast.fire({
+            //             icon: 'error',
+            //             title: error
+            //         })
+            //     });
+            // }
 
             // var newPassword = getASecureRandomPassword();
-
-            user.updatePassword(this.account.password).then(() => {
-            // Update successful.
-            }).catch((error) => {
-            // An error happened.
-            });
 
             // user.updateProfile({
             // displayName: "Jane Q. User",
@@ -231,23 +291,25 @@ export default {
         },
     },
     created() {
-        let user = fb.auth().currentUser
+        // let user = fb.auth().currentUser
 
-        let docRef = db.collection("profiles").doc(user.uid);
+        // console.log("user info: ", user, "user uid: ", user.uid);
 
-        docRef.get().then((doc) => {
-            if (doc.exists) {
-                // console.log("Document data:", doc.data());
-                this.account.name = doc.data().name;
-            } else {
-                // doc.data() will be undefined in this case
-                console.log("No such document!");
-            }
-        }).catch((error) => {
-            console.log("Error getting document:", error);
-        });
+        // let docRef = db.collection("profiles").doc(user.uid);
 
-        this.account.email = user.email;
+        // docRef.get().then((doc) => {
+        //     if (doc.exists) {
+        //         // console.log("Document data:", doc.data());
+        //         this.account.name = doc.data().name;
+        //     } else {
+        //         // doc.data() will be undefined in this case
+        //         console.log("No such document!");
+        //     }
+        // }).catch((error) => {
+        //     console.log("Error getting document:", error);
+        // });
+
+        // this.account.email = user.email;
     }
 };
 </script>
